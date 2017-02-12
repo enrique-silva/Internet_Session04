@@ -23,7 +23,6 @@ INSPECTION_PARAMS = {
     'Sort': 'H'
 }
 
-
 def get_inspection_page(**kwargs):
     url = INSPECTION_DOMAIN + INSPECTION_PATH
     params = INSPECTION_PARAMS.copy()

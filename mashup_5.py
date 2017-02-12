@@ -4,6 +4,8 @@ import json
 import pathlib
 import re
 import requests
+import sys
+from operator import itemgetter
 
 
 INSPECTION_DOMAIN = 'http://info.kingcounty.gov'
@@ -26,6 +28,24 @@ INSPECTION_PARAMS = {
     'Fuzzy_Search': 'N',
     'Sort': 'H'
 }
+
+def argument_getter():
+    if sys.argv[1] == 'highscore':
+        sorter = 'High Score'
+    if sys.argv[1] == 'averagescore':
+        sorter = 'Average Score'
+    if sys.argv[1] == 'totalinspections':
+        sorter = 'Total Inspection'
+
+    count = int(sys.argv[2])
+
+    try:
+        if sys.argv[3] == 'reverse':
+            reverse = False
+    except IndexError:
+        reverse = True
+
+    return sorter, count, reverse
 
 
 def get_inspection_page(**kwargs):
@@ -132,6 +152,7 @@ def result_generator(count):
         metadata = extract_restaurant_metadata(data_div)
         inspection_data = get_score_data(data_div)
         metadata.update(inspection_data)
+        #print (metadata)
         yield metadata
 
 
@@ -154,11 +175,26 @@ def get_geojson(result):
     geojson['properties'] = inspection_data
     return geojson
 
+def return_sorted_list(unsorted_results, sorter, count, reverse):
+    sorted_list = sorted(unsorted_results, key = lambda k: k[sorter], reverse=reverse)
+    return sorted_list
+
 
 if __name__ == '__main__':
     total_result = {'type': 'FeatureCollection', 'features': []}
-    for result in result_generator(10):
+    unsorted_results = []
+    sorter, count, reverse = argument_getter()
+    count_loop = 0
+    while count_loop < count:
+        for result in result_generator(count):
+            unsorted_results.append(result)
+            count_loop += 1
+    sorted_list = return_sorted_list(unsorted_results, sorter, count, reverse)
+    print (sorted_list)
+    for result in sorted_list:
         geojson = get_geojson(result)
         total_result['features'].append(geojson)
     with open('my_map.json', 'w') as fh:
         json.dump(total_result, fh)
+
+
